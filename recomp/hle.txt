@@ -1,0 +1,11 @@
+# Original functions that runtime/hle.c implements with host code.
+# They are not translated. One address per line.
+0x1405ea080   # CRT cos
+0x1405ed8d0   # CRT sin
+0x1405eb1f0   # CRT floor
+0x1405f3990   # CRT longjmp: restores the saved registers, then unwinds the native stack (runtime.c)
+
+# Functions the translator treats specially at their call sites. They are
+# still translated; the second word says how.
+0x1405f3ac0 setjmp   # CRT _setjmp: each call is paired with a native setjmp in the caller's frame
+0x1405b2620 wrap     # per-frame mouse handling (camera speed and zoom from the wheel): host/window.c runs code around it

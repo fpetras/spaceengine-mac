@@ -1,0 +1,194 @@
+<title>SpaceEngine on Apple Silicon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column, like a technical letter, with a status table and numbered findings */
+:root {
+  --paper: #f7f8fa;
+  --ink: #1b2230;
+  --muted: #5a6476;
+  --rule: #d9dee7;
+  --accent: #2f5d8a;
+  --accent-soft: #e6eef6;
+  --ok: #2e7d4f;
+  --ok-soft: #e4f2ea;
+  --partial: #9a6a12;
+  --partial-soft: #f6eedc;
+  --no: #8a3b3b;
+  --no-soft: #f4e4e4;
+  --code-bg: #eceff4;
+  --display: "Spectral", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #12161d; --ink: #e3e7ee; --muted: #9aa4b5; --rule: #2a313d;
+    --accent: #8db6dd; --accent-soft: #1c2a38;
+    --ok: #7cc79b; --ok-soft: #17271f; --partial: #e0b25e; --partial-soft: #2b2416;
+    --no: #e09a9a; --no-soft: #2e1c1c; --code-bg: #1d232d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12161d; --ink: #e3e7ee; --muted: #9aa4b5; --rule: #2a313d;
+  --accent: #8db6dd; --accent-soft: #1c2a38;
+  --ok: #7cc79b; --ok-soft: #17271f; --partial: #e0b25e; --partial-soft: #2b2416;
+  --no: #e09a9a; --no-soft: #2e1c1c; --code-bg: #1d232d;
+  color-scheme: dark;
+}
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.page { max-width: 46rem; margin: 0 auto; padding-inline: 20px; padding-block: 48px 72px; display: grid; gap: 40px; }
+header { display: grid; gap: 14px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(2rem, 5vw, 2.7rem); line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { font-size: 1.12rem; color: var(--muted); margin: 0; max-width: 40rem; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.85rem; color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 500; }
+section { display: grid; gap: 14px; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.55rem; line-height: 1.25; margin: 0; text-wrap: balance; }
+h3 { font-size: 1.02rem; font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 6px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+td:first-child { font-weight: 500; white-space: nowrap; }
+.pill { display: inline-block; font-size: 0.76rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { color: var(--ok); background: var(--ok-soft); }
+.pill.partial { color: var(--partial); background: var(--partial-soft); }
+.pill.no { color: var(--no); background: var(--no-soft); }
+ol.findings { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; counter-reset: finding; }
+ol.findings > li { counter-increment: finding; display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); gap: 4px 10px; }
+ol.findings > li::before { content: counter(finding); font-family: var(--display); font-size: 1.35rem; color: var(--accent); line-height: 1.3; grid-row: span 3; }
+ol.findings > li > * { min-width: 0; }
+.fix { font-size: 0.93rem; color: var(--muted); }
+.fix b { color: var(--ink); font-weight: 600; }
+.note { background: var(--accent-soft); border-radius: 8px; padding: 16px 18px; display: grid; gap: 8px; font-size: 0.95rem; }
+.sign { display: grid; gap: 2px; }
+.sign .name { font-family: var(--display); font-size: 1.2rem; font-style: italic; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">A report for Cosmographic</div>
+    <h1>SpaceEngine on Apple Silicon</h1>
+    <p class="lede">I got the Steam release of SpaceEngine running natively on an Apple Silicon Mac, as a personal experiment. Here is what worked, what macOS gets in the way of, and what I learned that might help an official Mac version.</p>
+    <div class="meta">
+      <span><b>Game</b> 0.991, build 50.2155 (Steam)</span>
+      <span><b>Mac</b> MacBook Air, Apple M5, 32 GB</span>
+      <span><b>OS</b> macOS 27</span>
+      <span><b>Date</b> October 2026</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Why I'm writing</h2>
+    <p>Wine and CrossOver can't run SpaceEngine on a Mac because the game needs more OpenGL than macOS provides, and Boot Camp is gone on Apple Silicon. I wanted to see whether a native build was feasible at all. It is: the game boots, renders at full Retina resolution at 60 frames per second on a fanless laptop, and I've spent hours flying around the planetarium.</p>
+    <p>I made this from my own purchased copy, for my own use only. Nothing from the game has been or will be shared: no executable, no translated code, no data, and the encrypted <code>.pak</code> archives were never opened outside the game itself. Steam's ownership checks run normally. I'm writing because the technical findings below are probably more useful to you than to me, and to ask whether a Mac version is something you'd consider.</p>
+  </section>
+
+  <section>
+    <h2>What works</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>State</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Rendering</td><td><span class="pill ok">Works</span></td><td>OpenGL 4.1 on Apple's Metal-backed driver, with <code>IgnoreCriticalCheck</code>. All shaders compile and link after the adjustments listed below. 60 fps at 2560×1440 in the menu and planetarium.</td></tr>
+          <tr><td>Atmospheres</td><td><span class="pill ok">Works</span></td><td>Only after the 3D-texture capability was reported (finding 2).</td></tr>
+          <tr><td>Steam</td><td><span class="pill ok">Works</span></td><td>Valve's own macOS <code>libsteam_api</code> initialises app 314650 for a native process and confirms ownership. Workshop queries work.</td></tr>
+          <tr><td>Sound</td><td><span class="pill ok">Works</span></td><td>Music and interface sounds, Ogg Vorbis through SDL audio.</td></tr>
+          <tr><td>Keyboard, mouse</td><td><span class="pill ok">Works</span></td><td>Including modifier shortcuts and text fields; see finding 7 about Mac keyboards.</td></tr>
+          <tr><td>Controllers</td><td><span class="pill ok">Works</span></td><td>SDL's game-controller API behaves the same on macOS.</td></tr>
+          <tr><td>Video recording</td><td><span class="pill partial">Partly</span></td><td>LGPL FFmpeg 8 with SVT-AV1 records correctly. None of the hardware encoders in the list exist on a Mac (finding 8).</td></tr>
+          <tr><td>VR</td><td><span class="pill no">No</span></td><td>There is no OpenVR runtime for macOS.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Findings for a native Mac build</h2>
+    <p>These are the places where macOS behaved differently from Windows drivers. Each one stopped something from working until it was handled.</p>
+    <ol class="findings">
+      <li>
+        <h3>OpenGL stops at 4.1, and a few 4.2+ features are used</h3>
+        <p>The engine runs on 4.1 once the version check is waived. Beyond 4.1 it relies on <code>GL_ARB_buffer_storage</code> (persistently mapped uniform buffers, and pixel-pack buffers for frame capture) and calls <code>glReadnPixels</code> (4.5) when recording video. Reverse-Z depth (<code>glClipControl</code>) and direct state access are unavailable, and the existing fallbacks work.</p>
+        <p class="fix"><b>What worked:</b> persistent mappings backed by ordinary memory, uploaded before each draw and filled after each pixel read; <code>glReadnPixels</code> mapped to <code>glReadPixels</code>.</p>
+      </li>
+      <li>
+        <h3>Apple doesn't list extensions that became core</h3>
+        <p>Capabilities are decided by extension name through GLEW. Apple's core profile reports only a short list, so <code>GL_EXT_texture3D</code> and <code>GL_EXT_framebuffer_multisample</code> appear missing even though 3D textures and multisampling are core. Without the first, the atmosphere model cache refuses to initialise and every body reports an unknown atmosphere model. GLEW also only loads <code>glReadnPixels</code> when 4.5 or <code>GL_KHR_robustness</code> is present, yet the recorder calls it unconditionally.</p>
+        <p class="fix"><b>Suggestion:</b> test the GL version for features that are core in it, rather than the old extension names.</p>
+      </li>
+      <li>
+        <h3>Program binaries are "supported" with zero formats</h3>
+        <p>Apple's 4.1 includes <code>glProgramBinary</code> but reports <code>GL_NUM_PROGRAM_BINARY_FORMATS</code> as 0. If the shader cache trusts the extension, the first run works and every later run draws a black screen, because no cached program can be loaded back.</p>
+        <p class="fix"><b>Suggestion:</b> enable the cache only when at least one binary format is reported.</p>
+      </li>
+      <li>
+        <h3>Apple's GLSL compiler is strictly 4.10</h3>
+        <p>45 shaders needed at least one change and 4 programs failed to link. Each problem is a construct other vendors accept:</p>
+        <ul>
+          <li><code>#if</code> on a name that was never defined is an error rather than 0.</li>
+          <li>An interpolation qualifier must come before <code>in</code>/<code>out</code>.</li>
+          <li><code>const</code> with a run-time initializer and stray semicolons after function bodies are 4.20 features.</li>
+          <li><code>texture2D</code> and similar 1.20 names don't exist in the core profile.</li>
+          <li>A variable named like a struct type is parsed as the type, so <code>name.field</code> is a syntax error.</li>
+          <li>Stage interfaces are paired <em>by name</em>, not by <code>layout(location)</code>: a vertex <code>out</code> and a geometry <code>in</code> with different names don't link (orbit lines).</li>
+          <li>Two active vertex attributes at the same location are a link error (cube-map orbits).</li>
+        </ul>
+        <p class="fix"><b>Suggestion:</b> compiling the shader set once with Apple's compiler, or with a strict validator such as glslang at version 410, would catch all of these.</p>
+      </li>
+      <li>
+        <h3>Contexts and threads</h3>
+        <p>Loader-thread contexts that share objects with the main context work well, as long as only the main thread uses the window's drawable. Contexts on other threads should be made current without one.</p>
+      </li>
+      <li>
+        <h3>Retina displays</h3>
+        <p>The engine thinks in pixels throughout, which suits macOS. The window just needs a high-density backing store, with sizes and mouse positions converted from points at the boundary. Rendering at native resolution held 60 fps in my tests.</p>
+      </li>
+      <li>
+        <h3>Mac keyboards</h3>
+        <p>Modifier shortcuts work once left and right Shift, Ctrl and Alt are tracked separately, as the engine checks them per side. Laptop keyboards have no numeric keypad, and Home, End, Page Up, Page Down, forward Delete and F1–F12 all need the fn key. Many default bindings use those keys. Mac users also expect Cmd where Windows uses Ctrl.</p>
+        <p class="fix"><b>Suggestion:</b> a Mac default key map, or Cmd accepted as Ctrl.</p>
+      </li>
+      <li>
+        <h3>Video encoders</h3>
+        <p>LGPL FFmpeg 8 builds cleanly for arm64, and SVT-AV1 runs well on Apple Silicon. NVENC, AMF and QSV don't exist on a Mac, but Apple's VideoToolbox encoders (H.264, HEVC, ProRes) are hardware-accelerated and LGPL-compatible. They would be the natural Mac counterpart if they were added to the encoder list.</p>
+      </li>
+      <li>
+        <h3>Steam needs nothing special</h3>
+        <p>Valve's macOS Steamworks library is arm64-native and initialises app 314650 for a native process; ownership, interfaces and Workshop queries all work.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>How I did it</h2>
+    <p>I don't have your source, so I translated the shipped Windows executable instead. Each x86-64 function was converted mechanically to C and compiled for arm64, then checked instruction by instruction against the original in an emulator. A small layer stands in for the parts of Windows the game uses: windows, files, threads, OpenGL contexts, SDL and FFmpeg. It's a working proof of concept, but it's tied to this exact build and can't be distributed, so it isn't a substitute for a real port.</p>
+    <div class="note">
+      <p><b>Long-term caveat.</b> Apple deprecated OpenGL in 2018. It still works well on macOS 27, but a lasting Mac version would probably move to Metal, or to Vulkan through a Metal translation layer.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Questions for you</h2>
+    <ul>
+      <li>Is a native macOS version something you'd consider? I'd be glad to help test it on Apple Silicon.</li>
+      <li>Are you comfortable with me continuing to use this privately on my own copy?</li>
+      <li>Would more detail on any of the findings above be useful?</li>
+    </ul>
+  </section>
+
+  <div class="sign">
+    <span>Thank you for SpaceEngine,</span>
+    <span class="name">Fabian Petras</span>
+  </div>
+</div>

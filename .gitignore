@@ -1,0 +1,16 @@
+# Anything derived from the game stays out of the repository: decompiler
+# output, tables about the executable (made by the build), translated code.
+decompiled/
+analysis/
+reconstructed/
+
+# Generated from the game's code or built from it
+recomp/gen/
+recomp/build/
+
+tools/.venv/
+__pycache__/
+.DS_Store
+docs/first-frame.png
+docs/main-menu.png
+recomp/third_party/
