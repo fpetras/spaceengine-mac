@@ -73,6 +73,43 @@ void host_alert(const char *title, const char *text) {
     fflush(stderr);
     if (pthread_main_np() && !getenv("SE_NO_DIALOGS")) SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, text, NULL);
 }
+
+// MessageBox with the buttons its type asks for (MB_YESNO and the rest),
+// answering with the Windows ID of the button pressed: the game asks "Run
+// anyway?" on machines below its minimum and quits unless it gets IDYES. With
+// no dialog possible, the first (affirmative) button is the answer.
+int host_ask(const char *title, const char *text, unsigned type) {
+    enum { IDOK = 1, IDCANCEL, IDABORT, IDRETRY, IDIGNORE, IDYES, IDNO };
+    static const struct { int n; int id[3]; const char *label[3]; } sets[] = {
+        {1, {IDOK}, {"OK"}},
+        {2, {IDOK, IDCANCEL}, {"OK", "Cancel"}},
+        {3, {IDABORT, IDRETRY, IDIGNORE}, {"Abort", "Retry", "Ignore"}},
+        {3, {IDYES, IDNO, IDCANCEL}, {"Yes", "No", "Cancel"}},
+        {2, {IDYES, IDNO}, {"Yes", "No"}},
+        {2, {IDRETRY, IDCANCEL}, {"Retry", "Cancel"}},
+    };
+    unsigned kind = type & 0xf;
+    if (kind >= sizeof sets / sizeof *sets) kind = 0;
+    fprintf(stderr, "\n[%s]\n%s\n\n", title, text);
+    fflush(stderr);
+    if (!pthread_main_np() || getenv("SE_NO_DIALOGS")) return sets[kind].id[0];
+    SDL_MessageBoxButtonData buttons[3];
+    for (int i = 0; i < sets[kind].n; i++) {
+        buttons[i].flags = i == 0 ? SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT
+                         : i == sets[kind].n - 1 ? SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT : 0;
+        buttons[i].buttonID = sets[kind].id[i];
+        buttons[i].text = sets[kind].label[i];
+    }
+    unsigned icon = type & 0xf0;
+    SDL_MessageBoxData box = {
+        .flags = (icon == 0x10 ? SDL_MESSAGEBOX_ERROR : icon == 0x30 ? SDL_MESSAGEBOX_WARNING : SDL_MESSAGEBOX_INFORMATION)
+                 | SDL_MESSAGEBOX_BUTTONS_LEFT_TO_RIGHT,
+        .title = title, .message = text, .numbuttons = sets[kind].n, .buttons = buttons,
+    };
+    int pressed = -1;
+    if (!SDL_ShowMessageBox(&box, &pressed) || pressed < 0) return sets[kind].n > 1 ? sets[kind].id[sets[kind].n - 1] : IDOK;
+    return pressed;
+}
 void host_fatal(int status, const char *format, ...) {
     char text[2048];
     va_list args;
