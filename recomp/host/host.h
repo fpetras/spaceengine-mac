@@ -30,6 +30,8 @@ void host_init(void);
 // A message the player has to see: printed, and shown as a dialog when on the
 // main thread. host_fatal then ends the program with that exit status.
 void host_alert(const char *title, const char *text);
+// A MessageBox of the given Windows type (MB_YESNO, ...); returns the IDYES-style ID pressed.
+int host_ask(const char *title, const char *text, unsigned type);
 _Noreturn void host_fatal(int status, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
 // ------------------------------------------------------------- per thread

@@ -178,13 +178,12 @@ IMPORT(RegCloseKey) { RET(0); }
 IMPORT(FindWindowW) { RET(0); }         // no other instance is running
 IMPORT(MessageBoxW) {
     char *text = u16_to_utf8(PTR(1), -1), *title = ARG(2) ? u16_to_utf8(PTR(2), -1) : NULL;
-    host_alert(title ? title : "SpaceEngine", text);
+    int pressed = host_ask(title ? title : "SpaceEngine", text, (unsigned)ARG(3));
     free(text); free(title);
-    RET(1);                             // IDOK
+    RET(pressed);                       // IDOK, IDYES, IDNO, ...
 }
 IMPORT(MessageBoxA) {
-    host_alert(ARG(2) ? (const char *)PTR(2) : "SpaceEngine", (const char *)PTR(1));
-    RET(1);
+    RET(host_ask(ARG(2) ? (const char *)PTR(2) : "SpaceEngine", (const char *)PTR(1), (unsigned)ARG(3)));
 }
 
 // ------------------------------------------------------------- wsprintfW
